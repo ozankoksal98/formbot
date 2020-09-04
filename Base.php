@@ -111,61 +111,65 @@ class Base
 
         // Just read the main fragment information first.
         $data = $this->read(2);
+        $payload = '';
+        if ($data!="") {
+            // Is this the final fragment?  // Bit 0 in byte 0
+            /// @todo Handle huge payloads with multiple fragments.
+            $final = (boolean) (ord($data[0]) & 1 << 7);
 
-        // Is this the final fragment?  // Bit 0 in byte 0
-        /// @todo Handle huge payloads with multiple fragments.
-        $final = (boolean) (ord($data[0]) & 1 << 7);
+            // Should be unused, and must be false…  // Bits 1, 2, & 3
+            $rsv1  = (boolean) (ord($data[0]) & 1 << 6);
+            $rsv2  = (boolean) (ord($data[0]) & 1 << 5);
+            $rsv3  = (boolean) (ord($data[0]) & 1 << 4);
 
-        // Should be unused, and must be false…  // Bits 1, 2, & 3
-        $rsv1  = (boolean) (ord($data[0]) & 1 << 6);
-        $rsv2  = (boolean) (ord($data[0]) & 1 << 5);
-        $rsv3  = (boolean) (ord($data[0]) & 1 << 4);
+            // Parse opcode
+            $opcode_int = ord($data[0]) & 31; // Bits 4-7
+            $opcode_ints = array_flip(self::$opcodes);
+            if (!array_key_exists($opcode_int, $opcode_ints)) {
+                echo("Bad opcode in websocket frame: $opcode_int");
+            }
+            $opcode = $opcode_ints[$opcode_int];
+            $this->last_opcode = $opcode;
 
-        // Parse opcode
-    $opcode_int = ord($data[0]) & 31; // Bits 4-7
-    $opcode_ints = array_flip(self::$opcodes);
-        if (!array_key_exists($opcode_int, $opcode_ints)) {
-            echo("Bad opcode in websocket frame: $opcode_int");
-        }
-        $opcode = $opcode_ints[$opcode_int];
-        $this->last_opcode = $opcode;
+            // Masking?
+            $mask = (boolean) (ord($data[1]) >> 7);  // Bit 0 in byte 1
 
-        // Masking?
-    $mask = (boolean) (ord($data[1]) >> 7);  // Bit 0 in byte 1
-
-    $payload = "";
     
-        // Payload length
-    $payload_length = (integer) ord($data[1]) & 127; // Bits 1-7 in byte 1
-    if ($payload_length > 125) {
-        if ($payload_length === 126) {
-            $data = $this->read(2);
-        } // 126: Payload is a 16-bit unsigned int
-        else {
-            $data = $this->read(8);
-        } // 127: Payload is a 64-bit unsigned int
-        $payload_length = bindec(self::sprintB($data));
-    }
+    
+            // Payload length
+            $payload_length = (integer) ord($data[1]) & 127; // Bits 1-7 in byte 1
+            if ($payload_length > 125) {
+                if ($payload_length === 126) {
+                    $data = $this->read(2);
+                } // 126: Payload is a 16-bit unsigned int
+                else {
+                    $data = $this->read(8);
+                } // 127: Payload is a 64-bit unsigned int
+                $payload_length = bindec(self::sprintB($data));
+            }
 
-        // Get masking key.
-        if ($mask) {
-            $masking_key = $this->read(4);
-        }
-
-        // Get the actual payload, if any (might not be for e.g. close frames.
-        if ($payload_length > 0) {
-            $data = $this->read($payload_length);
-
+            // Get masking key.
             if ($mask) {
-                // Unmask payload.
-                $payload = '';
-                for ($i = 0; $i < $payload_length; $i++) {
-                    $payload .= ($data[$i] ^ $masking_key[$i % 4]);
+                $masking_key = $this->read(4);
+            }
+
+            // Get the actual payload, if any (might not be for e.g. close frames.
+            if ($payload_length > 0) {
+                $data = $this->read($payload_length);
+
+                if ($mask) {
+                    // Unmask payload.
+                    $payload = '';
+                    for ($i = 0; $i < $payload_length; $i++) {
+                        $payload .= ($data[$i] ^ $masking_key[$i % 4]);
+                    }
+                } else {
+                    $payload = $data;
                 }
-            } else {
-                $payload = $data;
             }
         }
+
+        return $payload;
         /*
         if ($opcode === 'close') {
           // Get the close status.
@@ -184,7 +188,6 @@ class Base
           $this->is_connected = false;
         }
 */
-        return $payload;
     }
 
     /**
@@ -228,21 +231,23 @@ class Base
             if ($buffer === false) {
                 $metadata = stream_get_meta_data($this->socket);
                 echo(
-				'Broken frame, read ' . strlen($payload_data) . ' of stated '
-				. $payload_length . ' bytes.  Stream state: '
-				. json_encode($metadata)
-			);
+                'Broken frame, read ' . strlen($payload_data) . ' of stated '
+                . $payload_length . ' bytes.  Stream state: '
+                . json_encode($metadata)
+            );
             }
             if ($buffer === '') {
                 $metadata = stream_get_meta_data($this->socket);
+                /*
                 echo (
                   'Empty read; connection dead?  Stream state: ' . json_encode($metadata)
-                );
+                );*/
                 break;
             }
             $data .= $buffer;
-            
         }
+        
+
         return $data;
     }
 

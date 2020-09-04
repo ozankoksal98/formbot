@@ -69,6 +69,10 @@ class Client extends Base {
     // Set timeout on the stream as well.
     stream_set_timeout($this->socket, $this->options['timeout']);
 
+
+    // Set blocking false
+    
+
     // Generate the WebSocket key.
     $key = self::generateKey();
 
@@ -133,6 +137,9 @@ class Client extends Base {
     if ($keyAccept !== $expectedResonse) {
       throw new ConnectionException('Server sent bad upgrade response.');
     }
+
+    echo"STREAM Blocking set :";
+    echo stream_set_blocking($this->socket,false);
 
     $this->is_connected = true;
   }
