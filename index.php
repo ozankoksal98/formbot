@@ -1,37 +1,14 @@
 <?php
-/*
-    class Heartbeat extends Thread {
-        public function construct($interval,$client){
-            $this->client = $client;
-            $this->interval = $interval;
-            $this->maxRuns = 20;
-        }
-        public function run(){
-            echo $this->client->recieve();
-            $this->client->send('{
-                "op": 1,
-                "d":null
-            }');
-            usleep(200000);
-            echo $r;
-            echo "<br>".$t."<br>";
-        }
-    }*/
+
     include_once("Client.php");
     include_once("DiscordIntegration.php");
+    include_once("requests.php");
 
-    $token = "";
+    $token = "NzQ1NjcwOTUzMTc4MjM0OTQw.Xz1KMQ.1tJN2Pd7AWPD7Pnaqv2VQyqzZ3Y";
     $integration = new DiscordIntegration($token, 744853637385420921);
     //202314428827050
     //202251323327039
-    $formID= "202251323327039";
-    $form = $integration->getFormNew(intval($formID));
-    $questions = $form->getQuestions();
-    usort($questions,function($a,$b){
-        return intval($a["order"])- intval($b["order"]);
-    });
-    //$hb= new Heartbeat(20,$client);
-    
+    //$formID= "202251323327039";
     $client = new Client("wss://gateway.discord.gg:443");
     $client->receive() . "\n";
     $client->send('{
@@ -52,6 +29,7 @@
     $content = "";
     $t = 0;
     $q = 0;
+    $k = 0;
     $counter = 0;
     $counter_on = false;
     $questionAsked = false;
@@ -61,58 +39,59 @@
     $connectionStatus;
     $seqNumber='0';
     $tries = 0;
+    $questions = null;
     $finished = false;
-    while ($content!="-close") {
-        //handle disconnection
-        $seqNumber = $message["s"];
-        //echo $seqNumber;
-        /*
-        $connectionStatus = stream_get_meta_data($client->getSocket());
-        $timedOut = $connectionStatus["timed_out"];
-        while ($timedOut== "1") {
-            $integration->getApi()->sendTextMessage($author_channel_id, "Disconnected", "");
-            sleep(1);
-            $client->close();
-            $client = new Client("wss://gateway.discord.gg:443");;
-            $client->receive() . "\n";
-            $client->send('{
-                "op": 6,
-                "d": {
-                    "token": "'.'NzQ1NjcwOTUzMTc4MjM0OTQw.Xz1KMQ.1tJN2Pd7AWPD7Pnaqv2VQyqzZ3Y'.'",
-                    "session_id": "'.$sessionID.'",
-                    "seq":2
-                }
+    $formChosen = false;
+
+    try{
+ while (true) {
+        echo "<br><br>";
+        echo date("h:i:s");
+        echo "<br>control0<br>";
+        var_dump($content);
+        if($content=="-kick"){
+        break;
+        }
+        echo "<br>control1<br>";
+        if (!$finished) {
+            //to do send heartbeat every 35 seconds
+            if($t == 2){
+                 $client->send('{
+                "op": 1,
+                "d":null
             }');
-            $connectionStatus = stream_get_meta_data($client->getSocket());
-            print_r($connectionStatus);
-            $timedOut = $connectionStatus["timed_out"];
-            if($timedOut==""){
-                $integration->getApi()->sendTextMessage($author_channel_id,$client->receive() , "");
-                print_r(json_decode($client->receive(),true));
-                $client->send('{
-                    "op": 1,
-                    "d":0
-                }');
+            echo "<BR>".$t."HEARTBEAT SENT<BR>";
+            $t = 0;
             }
-            $tries++;
-        }*/$sent = false;
+           $t++;
+           echo "<BR>".$t." at : ".date("h:i:s")."<BR>";
+            //$integration->getApi()->sendTextMessage($author_channel_id, $client->receive(), "");
+        }
+        $sent = false;
         $break = false;
         while ($finished) {
             if (!$sent) {
-                $integration->getApi()->sendTextMessage($author_channel_id, "Are you sure you want to submit the form with these answers?\nType:\n`-yes` to submit,\n`-no` to exit without submitting,\n`-refill` to fill the form again. ", "");
                 //show submission summary
                 $str = "[";
                 $arr = [];
                 $qs = $form->getQuestions();
-                var_dump($sortedQs);
                 foreach ($answers as $k => $v) {
-                    if (isset($qs[$k]["text"])) {
-                        $arr[] = '{"name":"'.$qs[$k]["text"].'","value":"'.implode(",", array_values($v)).'"}';
+                    if (isset($qs[$k]["text"]) &&  $v["text"] != "No answer") {
+                        if ($qs[$k]["type"] == "control_inline") {
+                            $arr[] = '{"name":"Blanks","value":"'.implode(",", array_values($v)).'"}';
+                        } elseif (count(array_values($v))==0) {
+                            $arr[] = '{"name":"'.$qs[$k]["text"].'","value":"None"}';
+                        } else {
+                            $arr[] = '{"name":"'.$qs[$k]["text"].'","value":"'.implode(",", array_values($v)).'"}';
+                        }
                     }
                 }
                 $str .= implode(",", $arr);
                 $str .= "]";
-                $integration->getApi()->sendMessage($author_channel_id, "", '{"fields": '.$str.'}');
+                echo "<br><br>".$str."<br><br>";
+                echo $integration->getApi()->sendMessage($author_channel_id, " ", '{"title":"**Final preview**","color": 16328500,"fields": '.$str.'}');
+                usleep(2000000);
+                $integration->getApi()->sendTextMessage($author_channel_id, "Are you sure you want to submit the form with these answers?\nType:\n`-yes` to submit,\n`-no` to exit without submitting,\n`-refill` to fill the form again. ", "");
                 $sent = true;
             }
             $message = json_decode($client->receive(), true);
@@ -156,26 +135,49 @@
                     break;
                 }
             }
-            //list answers below
-            /*$str = "";
-            foreach($answers as $k){
-
-            }
-            $integration->getApi()->sendTextMessage($author_channel_id, "", "");*/
         }
 
         if ($break) {
             break;
         }
+        var_dump($finished);
+        
         if (!$finished) {
             if ($content =="-spawn") {
                 $author_id = $message["d"]["author"]["id"];
                 $author_channel_id = $message["d"]["channel_id"];
-                $integration->getApi()->sendTextMessage($author_channel_id, "Started filling form\nForm Name: ".$form->getTitle(), "");
+                $sent2 = false;
+                while (!$formChosen) {
+                    //show forms
+                    if (!$sent2) {
+                        $temp = $integration->getForms();
+                        $forms = [];
+                        foreach ($temp as $k => $v) {
+                            $forms[] = ($k+1)." : ".$v["title"];
+                        }
+                        $integration->getApi()->sendTextMessage($author_channel_id, "Available forms\n".implode("\n", $forms), "");
+                        $sent2 = true;
+                    }
+                    
+                    $message = json_decode($client->receive(), true);
+                    if (substr($message["d"]["content"], 0, 3)=="-a "&& $message["op"]=="0" && isset($message["d"]["content"]) && $message["d"]["author"]["id"]== $author_id && $message["d"]["channel_id"]==  $author_channel_id) {
+                        //set form id
+                        $idx = intval(str_replace("-a ", "", $message["d"]["content"]))-1 ;
+                        $formID = $temp[$idx]["id"];
+                        $form = $integration->getFormNew(intval($formID));
+                        $questions = $form->getQuestions();
+                        usort($questions, function ($a, $b) {
+                            return intval($a["order"])- intval($b["order"]);
+                        });
+                        $formChosen = true;
+                    }
+                }
+                $integration->getApi()->sendTextMessage($author_channel_id, "Started filling form\nForm Name: ".$form->getTitle()."\nYou can skip any question with `-skip`", "");
             }
             if (!$questionAsked && $author_id!="") {
                 //ask question
                 $current_question = $questions[$q];
+                $current_question_text= "";
                 if (!in_array($current_question["type"], $skip)) {
                     if ($current_question["type"]== "control_head") {
                         $integration->getApi()->sendTextMessage($author_channel_id, "**__".$current_question["text"]."__**", "");
@@ -188,16 +190,20 @@
                         usleep(1000000);
                         $questionAsked = false;
                     } elseif ($current_question["type"]== "control_fullname") {
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**".$current_question["text"]."**"."\n"."Input your name and surname seperated with a comma `-a name(s),surname`", "");
+                        $current_question_text= "**".$current_question["text"]."**"."\n"."Input your name and surname seperated with a comma `-a name(s),surname`";
+                        $integration->getApi()->sendTextMessage($author_channel_id, $current_question_text, "");
                         $questionAsked = true;
                     } elseif ($current_question["type"]== "control_address") {
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**".$current_question["text"]."**"."\n"."Input your address in this format `-a Street Address, State, City, Zip Code`", "");
+                        $current_question_text="**".$current_question["text"]."**"."\n"."Input your address in this format `-a Street Address, State, City, Zip Code`";
+                        $integration->getApi()->sendTextMessage($author_channel_id,$current_question_text , "");
                         $questionAsked = true;
                     } elseif ($current_question["type"]== "control_datetime") {
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**". $current_question["text"]."**"."\n"."Input the date in this format day,month,year;hours,minutes\nExample: `-a 31,08,2020;10,57`", "");
+                        $current_question_text= "**". $current_question["text"]."**"."\n"."Input the date in this format day,month,year;hours,minutes\nExample: `-a 31,08,2020;10,57`";
+                        $integration->getApi()->sendTextMessage($author_channel_id,$current_question_text, "");
                         $questionAsked = true;
                     } elseif ($current_question["type"]== "control_fileupload") {
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**". $current_question["text"]."**"."\n"."Input the links in comma seperated form as `-a url1,url2,url3`", "");
+                        $current_question_text="**". $current_question["text"]."**"."\n"."Input the links in comma seperated form as `-a url1,url2,url3`";
+                        $integration->getApi()->sendTextMessage($author_channel_id, $current_question_text, "");
                         $questionAsked = true;
                     } elseif ($current_question["type"]== "control_inline") {
                         $template = $current_question["template"];
@@ -209,45 +215,71 @@
                             $template = str_replace("{".$k["options"]["0"]["id"]."}", "__  ".$k["options"]["0"]["label"]."  __", $template);
                             $temp[] = $k["options"]["0"]["label"];
                         }
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**Fill in the blanks**\n".$template. "\nFill the blanks as `-a ".implode(", ", $temp)."`", "");
+                        $current_question_text= "**Fill in the blanks**\n".$template. "\nFill the blanks as `-a ".implode(", ", $temp)."`";
+                        $integration->getApi()->sendTextMessage($author_channel_id,$current_question_text, "");
                         $questionAsked = true;
                     } elseif ($current_question["type"]== "control_dropdown" || $current_question["type"]== "control_radio") {
                         $options = explode("|", $current_question["options"]);
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**".$current_question["text"]."**"."\nPick one of the options below by inputting a number from 1 to ".count($options)."\n".implode("\n", $options)."\nExample: `-a 2`", "");
+                        $current_question_text = "**".$current_question["text"]."**"."\nPick one of the options below by inputting a number from 1 to ".count($options)."\n".implode("\n", $options)."\nExample: `-a 2`";
+                        $integration->getApi()->sendTextMessage($author_channel_id, $current_question_text, "");
                         $questionAsked = true;
                     } elseif ($current_question["type"]== "control_checkbox") {
                         $options = explode("|", $current_question["options"]);
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**".$current_question["text"]."**"."\nPick options below by inputting comma seperated numbers x,y,z from 1 to".count($options)."\n".implode("\n", $options)."\nExample: `-a 1,3,4`", "");
+                        $current_question_text ="**".$current_question["text"]."**"."\nPick options below by inputting comma seperated numbers x,y,z from 1 to".count($options)."\n".implode("\n", $options)."\nExample: `-a 1,3,4`";
+                        $integration->getApi()->sendTextMessage($author_channel_id, $current_question_text, "");
                         $questionAsked = true;
                     } elseif ($current_question["type"]== "control_rating") {
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**".$current_question["text"]."**"."\nFrom ".$current_question["scaleFrom"]." to ".$current_question["stars"]."\nExample: `-a 2`", "");
+                        $current_question_text = "**".$current_question["text"]."**"."\nFrom ".$current_question["scaleFrom"]." to ".$current_question["stars"]."\nExample: `-a 2`";
+                        $integration->getApi()->sendTextMessage($author_channel_id,$current_question_text , "");
                         $questionAsked = true;
                     } elseif ($current_question["type"]== "control_scale") {
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**".$current_question["text"]."**"."\nFrom ".$current_question["scaleFrom"]." to ".$current_question["scaleAmount"]."\nExample: `-a 2`", "");
+                        $current_question_text = "**".$current_question["text"]."**"."\nFrom ".$current_question["scaleFrom"]." to ".$current_question["scaleAmount"]."\nExample: `-a 2`";
+                        $integration->getApi()->sendTextMessage($author_channel_id,$current_question_text, "");
                         $questionAsked = true;
                     } elseif ($current_question["type"]== "control_time") {
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**".$current_question["text"]."**"."\nInput the time as -a hours,minutes,{AM or PM}\nExample: `-a 12,50,AM`", "");
+                        $current_question_text =  "**".$current_question["text"]."**"."\nInput the time as -a hours,minutes,{AM or PM}\nExample: `-a 12,50,AM`";
+                        $integration->getApi()->sendTextMessage($author_channel_id,$current_question_text, "");
                         $questionAsked = true;
                     } else {
-                        $integration->getApi()->sendTextMessage($author_channel_id, "**".$current_question["text"]."**"."\nInput your answer as `-a answer`", "");
+                        $current_question_text = "**".$current_question["text"]."**"."\nInput your answer as `-a answer`";
+                        $integration->getApi()->sendTextMessage($author_channel_id,$current_question_text, "");
                         $questionAsked = true;
                     }
                 } else {
-                    //$integration->getApi()->sendTextMessage($author_channel_id, "Question skipped ~".$current_question["type"]."~", "");
-                    usleep(100000);
+                    $integration->getApi()->sendTextMessage($author_channel_id, "Question skipped ~".$current_question["type"]."~", "");
+                    usleep(1000000);
                     $questionAsked = false;
                 }
                 echo $current_question["type"];
                 $q++;
             }
-            if ($q==count($questions)) {
-                $finished = true;
-                continue;
+          
+            if ($questions!=null) {
+                if ($q==count($questions)) {
+                    $finished = true;
+                    continue;
+                }
             }
-            $message = json_decode($client->receive(), true);
+        
+            echo "<br> asdfasdf<br>";
+            
+            try{
+                $message = json_decode($client->receive(), true);
+                echo date("h:i:s");
+                if(isset($message)){
+                    var_dump($message);
+                }else{
+                    continue;
+                }
+            }catch(Exception $ex){
+                var_dump($ex);
+            }
+            
+            echo "process<br>";
             
             //print_r($message);
-            if ($message["op"]=="0" && isset($message["d"]["content"])) {
+            if (isset($message) && $message["op"]=="0" && isset($message["d"]["content"])) {
+                echo "process1<br>";
                 $content = $message["d"]["content"];
                 if ($author_id!="" && $questionAsked) {
                     if (substr($message["d"]["content"], 0, 3)=="-a "&& $message["d"]["author"]["id"]== $author_id && $message["d"]["channel_id"]==  $author_channel_id) {
@@ -275,8 +307,8 @@
                             $answers[$current_question["qid"]]["day"] = $date[0];
                             $answers[$current_question["qid"]]["month"] = $date[1];
                             $answers[$current_question["qid"]]["year"] = $date[2];
-                            $answers[$current_question["qid"]]["hour"] = $time[0];
-                            $answers[$current_question["qid"]]["minutes"] = $time[1];
+                        //$answers[$current_question["qid"]]["hour"] = $time[0];
+                            //$answers[$current_question["qid"]]["minutes"] = $time[1];
                         } elseif ($current_question["type"] == "control_phone") {
                             $answers[$current_question["qid"]]["full"] = $answer;
                         } elseif ($current_question["type"] == "control_checkbox") {
@@ -307,19 +339,82 @@
                         //if the answer is valid set question asked to false
                         //else , keep it true
                         $questionAsked = false;
+                    } elseif ($content == "-skip") {
+                        $answers[$current_question["qid"]]["text"] = "No answer";
+                        $questionAsked = false;
+                    } elseif ($content == "-preview") {
+                        //show preview
+                        $str = "[";
+                        $arr = [];
+                        $qs = $form->getQuestions();
+                        foreach ($answers as $k => $v) {
+                            if (isset($qs[$k]["text"]) &&  $v["text"] != "No answer") {
+                                if ($qs[$k]["type"] == "control_inline") {
+                                    $arr[] = '{"name":"Blanks","value":"'.implode(",", array_values($v)).'"}';
+                                } elseif (count(array_values($v))==0) {
+                                    $arr[] = '{"name":"'.$qs[$k]["text"].'","value":"None"}';
+                                } else {
+                                    $arr[] = '{"name":"'.$qs[$k]["text"].'","value":"'.implode(",", array_values($v)).'"}';
+                                }
+                            }
+                        }
+                        $str .= implode(",", $arr);
+                        $str .= "]";
+                        $integration->getApi()->sendMessage($author_channel_id, " ", '{"title":"**Preview of answers so far**:","color": 16328500,"fields": '.$str.'}');
+                        usleep(2000000);
+                        $integration->getApi()->sendTextMessage($author_channel_id, $current_question_text,"");
+                        $questionAsked =true;
                     }
                 }
+                echo "process2<br>";
             }
         }
-        if (!$finished) {
-            //to do send heartbeat every 35 seconds
-            $client->send('{
-                "op": 1,
-                "d":null
-            }');
-        
-            $r = $client->receive();
-            echo $r;
-            //$integration->getApi()->sendTextMessage($author_channel_id, $client->receive(), "");
-        }
+        echo "process3<br>";
+        $k++;
+        usleep(100000);
+        echo "K = ".$k;
+       
     }
+    }
+    catch(Exception $e){
+        var_dump($e->getMessage());
+    }
+    /*
+   
+
+    $integration->getApi()->sendTextMessage($author_channel_id, "Bot Left", "");
+
+
+//handle disconnection
+        $seqNumber = $message["s"];
+        //echo $seqNumber;
+        /*
+        $connectionStatus = stream_get_meta_data($client->getSocket());
+        $timedOut = $connectionStatus["timed_out"];
+        while ($timedOut== "1") {
+            $integration->getApi()->sendTextMessage($author_channel_id, "Disconnected", "");
+            sleep(1);
+            $client->close();
+            $client = new Client("wss://gateway.discord.gg:443");;
+            $client->receive() . "\n";
+            $client->send('{
+                "op": 6,
+                "d": {
+                    "token": "'.'NzQ1NjcwOTUzMTc4MjM0OTQw.Xz1KMQ.1tJN2Pd7AWPD7Pnaqv2VQyqzZ3Y'.'",
+                    "session_id": "'.$sessionID.'",
+                    "seq":2
+                }
+            }');
+            $connectionStatus = stream_get_meta_data($client->getSocket());
+            print_r($connectionStatus);
+            $timedOut = $connectionStatus["timed_out"];
+            if($timedOut==""){
+                $integration->getApi()->sendTextMessage($author_channel_id,$client->receive() , "");
+                print_r(json_decode($client->receive(),true));
+                $client->send('{
+                    "op": 1,
+                    "d":0
+                }');
+            }
+            $tries++;
+        }*/

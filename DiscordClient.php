@@ -98,6 +98,5 @@ class DiscordClient{
     }
     
 }
-// "genel" channel id = 744853637385420924
-// guild id = 744853637385420921
+
 ?>

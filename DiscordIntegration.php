@@ -51,7 +51,7 @@
         }
 
         public function getForms(){
-            return json_decode(Requests::getRequest("https://api.jotform.com/user/forms",
+            return json_decode(Requests::getRequest("https://api.jotform.com/user/forms?".'filter=%7B"status"%3A"ENABLED"%7D',
                 array("APIKEY: ".$this->apiKey)),true)["content"];
         }
         
