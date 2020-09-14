@@ -10,7 +10,6 @@
     //202251323327039
     //$formID= "202251323327039";
     $client = new Client("wss://gateway.discord.gg:443");
-    $client->receive() . "\n";
     $client->send('{
         "op": 2,
         "d": {
@@ -23,15 +22,12 @@
             "intents": 4608
         }
     }');
-    //$sessionID =json_decode($client->receive(), true)["d"]["session_id"];
     $author_id = "";
     $author_channel_id="";
     $content = "";
     $t = 0;
     $q = 0;
     $k = 0;
-    $counter = 0;
-    $counter_on = false;
     $questionAsked = false;
     $current_question = "";
     $skip = ['control_button','control_payment','control_captcha','control_divider','control_image','control_widget','control_signature','control_appointment','control_matrix'];
@@ -42,24 +38,24 @@
     $questions = null;
     $finished = false;
     $formChosen = false;
-
     try {
         while (true) {
+            flush();
             usleep(100000);
             if ($content=="-kick") {
                 break;
             }
             if (!$finished) {
-                //to do send heartbeat every 35 seconds
-                if ($t == 400) {
+                //send heartbeat every 40 seconds
+                if ($t == 300) {
                     $client->send('{
                         "op": 1,
                         "d":null
                     }');
                     echo "<BR>".$t."HEARTBEAT SENT<BR>"." at : ".date("h:i:s")."<BR>";
                     $t = 0;
-                    
-                }echo($t);
+                }
+                echo($t);
                 $t++;
 
                 //$integration->getApi()->sendTextMessage($author_channel_id, $client->receive(), "");
@@ -137,7 +133,6 @@
             if ($break) {
                 break;
             }
-            
         
             if (!$finished) {
                 if ($content =="-spawn") {
@@ -169,7 +164,24 @@
                             $formChosen = true;
                         }
                     }
-                    $integration->getApi()->sendTextMessage($author_channel_id, "Started filling form\nForm Name: ".$form->getTitle()."\nYou can skip any question with `-skip`", "");
+                    $integration->getApi()->sendTextMessage($author_channel_id, "Started filling form\nForm Name: ".$form->getTitle()."\nTo skip a question `-skip`\nTo view the current answers `-preview`", "");
+                } elseif ( isset($message) && $message["op"]=="0" && isset($message["d"]["content"]) && substr($message["d"]["content"], 0, 3)=="-l ") {
+                    $temp = explode("/", $content);
+                    if (preg_match('/([0-9]{15})/', $temp[count($temp)-1])==1) {
+                        $formID = $temp[count($temp)-1];
+                        $author_id = $message["d"]["author"]["id"];
+                        $author_channel_id = $message["d"]["channel_id"];
+                        $form = $integration->getFormNew(intval($formID));
+                        $questions = $form->getQuestions();
+                        usort($questions, function ($a, $b) {
+                            return intval($a["order"])- intval($b["order"]);
+                        });
+                        $formChosen = true;
+                        $integration->getApi()->sendTextMessage($author_channel_id, "Started filling form\nForm Name: ".$form->getTitle()."\nTo skip a question `-skip`\nTo view the current answers `-preview`", "");
+                    }else{
+                        usleep(500000);
+                        $integration->getApi()->sendTextMessage($author_channel_id, "Not a valid link", "");
+                    }
                 }
                 if (!$questionAsked && $author_id!="") {
                     //ask question
@@ -265,7 +277,7 @@
                     
                     if (!isset($message)) {
                         continue;
-                    } 
+                    }
                 } catch (Exception $ex) {
                     //var_dump($ex);
                 }
@@ -360,18 +372,17 @@
                             $questionAsked =true;
                         }
                     }
-                
                 }
             }
-           
         }
     } catch (Exception $e) {
         var_dump($e->getMessage());
     }
+    $integration->getApi()->sendTextMessage($author_channel_id, "Bot Left", "");
+
     /*
 
 
-    $integration->getApi()->sendTextMessage($author_channel_id, "Bot Left", "");
 
 
 //handle disconnection
