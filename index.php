@@ -1,8 +1,8 @@
 <?php
 
-    include_once("Client.php");
-    include_once("DiscordIntegration.php");
-    include_once("requests.php");
+    include_once("src/Client.php");
+    include_once("src/DiscordIntegration.php");
+    include_once("src/requests.php");
 
     $token = "NzQ1NjcwOTUzMTc4MjM0OTQw.Xz1KMQ.1tJN2Pd7AWPD7Pnaqv2VQyqzZ3Y";
     $integration = new DiscordIntegration($token, 744853637385420921);
