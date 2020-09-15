@@ -31,7 +31,6 @@
     $current_question = "";
     $skip = ['control_button','control_payment','control_captcha','control_divider','control_image','control_widget','control_signature','control_appointment','control_matrix'];
     $answers = [];
-    $tries = 0;
     $questions = null;
     $finished = false;
     $formChosen = false;
