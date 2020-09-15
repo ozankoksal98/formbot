@@ -15,7 +15,7 @@ class Base
     'close'  => 8,
     'ping'   => 9,
     'pong'   => 10,
-  );
+    f);
 
     public function getLastOpcode()
     {
@@ -54,8 +54,8 @@ class Base
 
 
         // Write FIN, final fragment bit.
-    $final = true; /// @todo Support HUGE payloads.
-    $frame_head_binstr .= $final ? '1' : '0';
+        $final = true; /// @todo Support HUGE payloads.
+        $frame_head_binstr .= $final ? '1' : '0';
 
         // RSV 1, 2, & 3 false and unused.
         $frame_head_binstr .= '000';
@@ -187,7 +187,7 @@ class Base
           fclose($this->socket);
           $this->is_connected = false;
         }
-*/
+        */
     }
 
     /**
@@ -216,9 +216,7 @@ class Base
         $written = fwrite($this->socket, $data);
 
         if ($written < strlen($data)) {
-            echo(
-        "Could only write $written out of " . strlen($data) . " bytes."
-      );
+            echo("Could only write $written out of " . strlen($data) . " bytes.");
         }
     }
 
@@ -234,7 +232,7 @@ class Base
                 'Broken frame, read ' . strlen($payload_data) . ' of stated '
                 . $payload_length . ' bytes.  Stream state: '
                 . json_encode($metadata)
-            );
+                );
             }
             if ($buffer === '') {
                 $metadata = stream_get_meta_data($this->socket);

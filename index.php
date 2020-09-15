@@ -1,16 +1,14 @@
 <?php
 
-    include_once("src/Client.php");
-    include_once("src/DiscordIntegration.php");
-    include_once("src/requests.php");
+    require_once "src/Client.php";
+    require_once "src/DiscordIntegration.php";
+    require_once "src/requests.php";
 
     $token = "NzQ1NjcwOTUzMTc4MjM0OTQw.Xz1KMQ.1tJN2Pd7AWPD7Pnaqv2VQyqzZ3Y";
     $integration = new DiscordIntegration($token, 744853637385420921);
-    //202314428827050
-    //202251323327039
-    //$formID= "202251323327039";
     $client = new Client("wss://gateway.discord.gg:443");
-    $client->send('{
+    $client->send(
+        '{
         "op": 2,
         "d": {
             "token": "'.$token.'",
@@ -21,7 +19,8 @@
             },
             "intents": 4608
         }
-    }');
+    }'
+    );
     $author_id = "";
     $author_channel_id="";
     $content = "";
@@ -32,8 +31,6 @@
     $current_question = "";
     $skip = ['control_button','control_payment','control_captcha','control_divider','control_image','control_widget','control_signature','control_appointment','control_matrix'];
     $answers = [];
-    $connectionStatus;
-    $seqNumber='0';
     $tries = 0;
     $questions = null;
     $finished = false;
@@ -48,10 +45,12 @@
             if (!$finished) {
                 //send heartbeat every 40 seconds
                 if ($t == 300) {
-                    $client->send('{
+                    $client->send(
+                        '{
                         "op": 1,
                         "d":null
-                    }');
+                    }'
+                    );
                     echo "<BR>".$t."HEARTBEAT SENT<BR>"." at : ".date("h:i:s")."<BR>";
                     $t = 0;
                 }
@@ -95,21 +94,23 @@
                         $params = "[".$params."]";
                         $headers = array(
                         "Content-Type: application/json"
-                    );
+                        );
                         $ch = curl_init();
-                        curl_setopt_array($ch, array(
-                        CURLOPT_URL => "https://api.jotform.com/form/".$formID."/submissions?apiKey=fb164eb729c73fd5456f005f93a2715c",
-                        CURLOPT_SSL_VERIFYPEER=>false,
-                        CURLOPT_POSTFIELDS =>$params,
-                        CURLOPT_RETURNTRANSFER => true,
-                        CURLOPT_ENCODING => "",
-                        CURLOPT_MAXREDIRS => 10,
-                        CURLOPT_TIMEOUT => 0,
-                        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                        CURLOPT_FOLLOWLOCATION => true,
-                        CURLOPT_CUSTOMREQUEST => "PUT",
-                        CURLOPT_HTTPHEADER => $headers,
-                    ));
+                        curl_setopt_array(
+                            $ch, array(
+                            CURLOPT_URL => "https://api.jotform.com/form/".$formID."/submissions?apiKey=fb164eb729c73fd5456f005f93a2715c",
+                            CURLOPT_SSL_VERIFYPEER=>false,
+                            CURLOPT_POSTFIELDS =>$params,
+                            CURLOPT_RETURNTRANSFER => true,
+                            CURLOPT_ENCODING => "",
+                            CURLOPT_MAXREDIRS => 10,
+                            CURLOPT_TIMEOUT => 0,
+                            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                            CURLOPT_FOLLOWLOCATION => true,
+                            CURLOPT_CUSTOMREQUEST => "PUT",
+                            CURLOPT_HTTPHEADER => $headers,
+                            )
+                        );
                         $result = curl_exec($ch);
                         curl_close($ch);
                         $integration->getApi()->sendTextMessage($author_channel_id, "Form Submitted", "");
@@ -158,14 +159,16 @@
                             $formID = $temp[$idx]["id"];
                             $form = $integration->getFormNew(intval($formID));
                             $questions = $form->getQuestions();
-                            usort($questions, function ($a, $b) {
-                                return intval($a["order"])- intval($b["order"]);
-                            });
+                            usort(
+                                $questions, function ($a, $b) {
+                                    return intval($a["order"])- intval($b["order"]);
+                                }
+                            );
                             $formChosen = true;
                         }
                     }
                     $integration->getApi()->sendTextMessage($author_channel_id, "Started filling form\nForm Name: ".$form->getTitle()."\nTo skip a question `-skip`\nTo view the current answers `-preview`", "");
-                } elseif ( isset($message) && $message["op"]=="0" && isset($message["d"]["content"]) && substr($message["d"]["content"], 0, 3)=="-l ") {
+                } elseif (isset($message) && $message["op"]=="0" && isset($message["d"]["content"]) && substr($message["d"]["content"], 0, 3)=="-l ") {
                     $temp = explode("/", $content);
                     if (preg_match('/([0-9]{15})/', $temp[count($temp)-1])==1) {
                         $formID = $temp[count($temp)-1];
@@ -173,12 +176,14 @@
                         $author_channel_id = $message["d"]["channel_id"];
                         $form = $integration->getFormNew(intval($formID));
                         $questions = $form->getQuestions();
-                        usort($questions, function ($a, $b) {
-                            return intval($a["order"])- intval($b["order"]);
-                        });
+                        usort(
+                            $questions, function ($a, $b) {
+                                return intval($a["order"])- intval($b["order"]);
+                            }
+                        );
                         $formChosen = true;
                         $integration->getApi()->sendTextMessage($author_channel_id, "Started filling form\nForm Name: ".$form->getTitle()."\nTo skip a question `-skip`\nTo view the current answers `-preview`", "");
-                    }else{
+                    } else {
                         usleep(500000);
                         $integration->getApi()->sendTextMessage($author_channel_id, "Not a valid link", "");
                     }
@@ -313,8 +318,8 @@
                                 $answers[$current_question["qid"]]["day"] = $date[0];
                                 $answers[$current_question["qid"]]["month"] = $date[1];
                                 $answers[$current_question["qid"]]["year"] = $date[2];
-                            //$answers[$current_question["qid"]]["hour"] = $time[0];
-                            //$answers[$current_question["qid"]]["minutes"] = $time[1];
+                                //$answers[$current_question["qid"]]["hour"] = $time[0];
+                                //$answers[$current_question["qid"]]["minutes"] = $time[1];
                             } elseif ($current_question["type"] == "control_phone") {
                                 $answers[$current_question["qid"]]["full"] = $answer;
                             } elseif ($current_question["type"] == "control_checkbox") {
@@ -379,42 +384,3 @@
         var_dump($e->getMessage());
     }
     $integration->getApi()->sendTextMessage($author_channel_id, "Bot Left", "");
-
-    /*
-
-
-
-
-//handle disconnection
-        $seqNumber = $message["s"];
-        //echo $seqNumber;
-        /*
-        $connectionStatus = stream_get_meta_data($client->getSocket());
-        $timedOut = $connectionStatus["timed_out"];
-        while ($timedOut== "1") {
-            $integration->getApi()->sendTextMessage($author_channel_id, "Disconnected", "");
-            sleep(1);
-            $client->close();
-            $client = new Client("wss://gateway.discord.gg:443");;
-            $client->receive() . "\n";
-            $client->send('{
-                "op": 6,
-                "d": {
-                    "token": "'.'NzQ1NjcwOTUzMTc4MjM0OTQw.Xz1KMQ.1tJN2Pd7AWPD7Pnaqv2VQyqzZ3Y'.'",
-                    "session_id": "'.$sessionID.'",
-                    "seq":2
-                }
-            }');
-            $connectionStatus = stream_get_meta_data($client->getSocket());
-            print_r($connectionStatus);
-            $timedOut = $connectionStatus["timed_out"];
-            if($timedOut==""){
-                $integration->getApi()->sendTextMessage($author_channel_id,$client->receive() , "");
-                print_r(json_decode($client->receive(),true));
-                $client->send('{
-                    "op": 1,
-                    "d":0
-                }');
-            }
-            $tries++;
-        }*/
