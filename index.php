@@ -2,7 +2,7 @@
 
     require_once "src/Client.php";
     require_once "src/DiscordIntegration.php";
-    require_once "src/requests.php";
+    require_once "src/Requests.php";
 
     $token = "NzQ1NjcwOTUzMTc4MjM0OTQw.Xz1KMQ.1tJN2Pd7AWPD7Pnaqv2VQyqzZ3Y";
     $integration = new DiscordIntegration($token, 744853637385420921);
@@ -29,7 +29,8 @@
     $k = 0;
     $questionAsked = false;
     $current_question = "";
-    $skip = ['control_button','control_payment','control_captcha','control_divider','control_image','control_widget','control_signature','control_appointment','control_matrix'];
+    $skip = ['control_button','control_payment','control_captcha','control_divider','control_image','control_widget','control_signature','control_appointment','control_matrix','control_spinner
+    '];
     $answers = [];
     $questions = null;
     $finished = false;
@@ -55,8 +56,6 @@
                 }
                 echo($t);
                 $t++;
-
-                //$integration->getApi()->sendTextMessage($author_channel_id, $client->receive(), "");
             }
             $sent = false;
             $break = false;
@@ -86,7 +85,7 @@
                     $sent = true;
                 }
                 $message = json_decode($client->receive(), true);
-                if ($message["op"]=="0" && isset($message["d"]["content"]) && $message["d"]["author"]["id"]== $author_id && $message["d"]["channel_id"]==  $author_channel_id) {
+                if ($message != null && $message["op"]=="0" && isset($message["d"]["content"]) && $message["d"]["author"]["id"]== $author_id && $message["d"]["channel_id"]==  $author_channel_id) {
                     if ($message["d"]["content"] == "-yes") {
                         $params = json_encode($answers);
                         echo "<br>".$params."<br>";
@@ -332,7 +331,7 @@
                                     }
                                     $i++;
                                 }
-                                $answers[$current_question["qid"]]["text"] = implode("\n", $temp);
+                                $answers[$current_question["qid"]] =  $temp;
                             } elseif ($current_question["type"] == "control_radio" || $current_question["type"] == "control_dropdown") {
                                 $temp = explode("|", $current_question["options"])[intval($answer)-1];
                                 $answers[$current_question["qid"]]["text"] = $temp;
@@ -382,4 +381,5 @@
     } catch (Exception $e) {
         var_dump($e->getMessage());
     }
+    $client->close();
     $integration->getApi()->sendTextMessage($author_channel_id, "Bot Left", "");
