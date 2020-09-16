@@ -2,9 +2,8 @@
 
 require_once "Requests.php";
 /**
- * to-do implement splitting longer messages
+ * Undocumented class
  */
-
 class DiscordClient
 {
     protected $baseUrl = "https://discord.com/api";
@@ -20,42 +19,45 @@ class DiscordClient
         $this->guildID = $guildID;
     }
 
+    /**
+     * This method returns the authentication header.
+     *
+     * @return string
+     */
     public function getauthHeader()
     {
-        //get authentication header
         return $this->authHeader;
     }
 
+    //get gateway api uri
     public function getGateway()
     {
-        //get gateway api 
         return Requests::getRequest($this->baseUrl."/gateway", array($this->authHeader));
     }
 
+    //get gateway bot info
     public function getGatewayBot()
     {
-        //get gateway bot info
         return Requests::getRequest($this->baseUrl."/gateway/bot", array($this->authHeader));
     }
 
+    //Gets info about user object
     public function getUser()
     {
-        //Gets info about user object
         return Requests::getRequest($this->baseUrl."/users/@me", array($this->authHeader));
     }
 
+    //Gets info about servers that the current user is in
     public function getCurrentUserGuilds()
     {
-        //Gets info about servers that the current user is in
         return Requests::getRequest($this->baseUrl."/users/@me/guilds", array($this->authHeader));
     }
 
     public function getUserConnections()
     {
-        //get user connections spotify etc.
         return Requests::getRequest($this->baseUrl."/users/@me/connections", array($this->authHeader));
     }
-
+    
     public function getGuildMembers()
     {
         return Requests::getRequest($this->baseUrl."/guilds/".$this->guildID."/members?limit=1000", array($this->authHeader));
@@ -74,7 +76,6 @@ class DiscordClient
 
     public function sendTestMessage($channelID)
     {
-        //Send test message
         echo Requests::postRequest(
             $this->baseUrl."/channels/".$channelID."/messages", json_decode(
                 '{

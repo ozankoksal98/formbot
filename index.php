@@ -1,10 +1,17 @@
 <?php
-
+/**
+ * Main script for formbot application.
+ *
+ * PHP version 7
+ *
+ * @author Ozan Koksal <ozankoksal@hotmail.com>
+ * @link   https://github.com/ozankoksal98/formbot
+ */
     require_once "src/Client.php";
     require_once "src/DiscordIntegration.php";
     require_once "src/Requests.php";
 
-    $token = "NzQ1NjcwOTUzMTc4MjM0OTQw.Xz1KMQ.1tJN2Pd7AWPD7Pnaqv2VQyqzZ3Y";
+    $token = "";
     $integration = new DiscordIntegration($token, 744853637385420921);
     $client = new Client("wss://gateway.discord.gg:443");
     $client->send(
@@ -29,8 +36,9 @@
     $k = 0;
     $questionAsked = false;
     $current_question = "";
-    $skip = ['control_button','control_payment','control_captcha','control_divider','control_image','control_widget','control_signature','control_appointment','control_matrix','control_spinner
-    '];
+    $skip = ['control_button','control_payment','control_captcha','control_divider',
+    'control_image','control_widget','control_signature','control_appointment',
+    'control_matrix','control_spinner'];
     $answers = [];
     $questions = null;
     $finished = false;
@@ -51,7 +59,8 @@
                         "d":null
                     }'
                     );
-                    echo "<BR>".$t."HEARTBEAT SENT<BR>"." at : ".date("h:i:s")."<BR>";
+                    echo "<BR>".$t."HEARTBEAT SENT<BR>"." at : "
+                    .date("h:i:s")."<BR>";
                     $t = 0;
                 }
                 echo($t);
@@ -68,11 +77,14 @@
                     foreach ($answers as $k => $v) {
                         if (isset($qs[$k]["text"]) &&  $v["text"] != "No answer") {
                             if ($qs[$k]["type"] == "control_inline") {
-                                $arr[] = '{"name":"Blanks","value":"'.implode(",", array_values($v)).'"}';
+                                $arr[] = '{"name":"Blanks","value":"'.
+                                    implode(",", array_values($v)).'"}';
                             } elseif (count(array_values($v))==0) {
-                                $arr[] = '{"name":"'.$qs[$k]["text"].'","value":"None"}';
+                                $arr[] = '{"name":"'.$qs[$k]["text"]
+                                    .'","value":"None"}';
                             } else {
-                                $arr[] = '{"name":"'.$qs[$k]["text"].'","value":"'.implode(",", array_values($v)).'"}';
+                                $arr[] = '{"name":"'.$qs[$k]["text"].'","value":"'
+                                    .implode(",", array_values($v)).'"}';
                             }
                         }
                     }
@@ -95,8 +107,10 @@
                         );
                         $ch = curl_init();
                         curl_setopt_array(
-                            $ch, array(
-                            CURLOPT_URL => "https://api.jotform.com/form/".$formID."/submissions?apiKey=fb164eb729c73fd5456f005f93a2715c",
+                            $ch,
+                            array(
+                            CURLOPT_URL => "https://api.jotform.com/form/".$formID
+                            ."/submissions?apiKey=fb164eb729c73fd5456f005f93a2715c",
                             CURLOPT_SSL_VERIFYPEER=>false,
                             CURLOPT_POSTFIELDS =>$params,
                             CURLOPT_RETURNTRANSFER => true,
@@ -158,7 +172,8 @@
                             $form = $integration->getFormNew(intval($formID));
                             $questions = $form->getQuestions();
                             usort(
-                                $questions, function ($a, $b) {
+                                $questions,
+                                function ($a, $b) {
                                     return intval($a["order"])- intval($b["order"]);
                                 }
                             );
@@ -175,7 +190,8 @@
                         $form = $integration->getFormNew(intval($formID));
                         $questions = $form->getQuestions();
                         usort(
-                            $questions, function ($a, $b) {
+                            $questions,
+                            function ($a, $b) {
                                 return intval($a["order"])- intval($b["order"]);
                             }
                         );
@@ -316,7 +332,7 @@
                                 $answers[$current_question["qid"]]["day"] = $date[0];
                                 $answers[$current_question["qid"]]["month"] = $date[1];
                                 $answers[$current_question["qid"]]["year"] = $date[2];
-                                //$answers[$current_question["qid"]]["hour"] = $time[0];
+                            //$answers[$current_question["qid"]]["hour"] = $time[0];
                                 //$answers[$current_question["qid"]]["minutes"] = $time[1];
                             } elseif ($current_question["type"] == "control_phone") {
                                 $answers[$current_question["qid"]]["full"] = $answer;
